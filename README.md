@@ -8,11 +8,13 @@ TODO
 
 ## Installation
 
+### On macOS with [homebrew](https://brew.sh)
+
 ```
 brew install keith/formulae/git-pile
 ```
 
-Or add this repo's `bin` directory to your `PATH`
+### Manually
 
-Currently this also relies on [ghb](https://github.com/keith/ghb), but
-we should make it support [gh](https://cli.github.com/) instead.
+1. Add this repo's `bin` directory to your `PATH`
+2. Install [gh](https://cli.github.com/)
