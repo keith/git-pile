@@ -85,4 +85,5 @@ else
   echo "error: failed to create remote branch: $(cat "$error_file")" >&2
   _detach_branch
   git branch -D "$branch_name"
+  exit 1
 fi
