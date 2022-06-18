@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
-set -x
+
+if [[ -n "${GIT_PILE_VERBOSE:-}" ]]; then
+  set -x
+fi
 
 updatepr_args=()
 commit_args=()
@@ -9,26 +12,16 @@ for arg in "$@"
 do
   case "$arg" in
     --squash)
+      # always signoff to avoid pre-commit hook failures, this is ignored anyways
       commit_args+=(-m ignore -s)
       updatepr_args+=(--squash)
       ;;
-    -s)
-      commit_args+=(-s)
-      ;;
-    --no-verify)
-      commit_args+=(--no-verify)
-      ;;
     *)
-      echo "error: unexpected argument: $arg"
-      exit 1
+      commit_args+=("$arg")
       ;;
   esac
 done
 
-if [[ -z "${commit_args:-}" ]]; then
-  commit_args=(--)
-fi
-
 head_sha=$(git rev-parse HEAD)
-git commit "${commit_args[@]}"
+git commit "${commit_args[@]:-}"
 git updatepr "$head_sha" "${updatepr_args[@]:-}"
