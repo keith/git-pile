@@ -178,6 +178,8 @@ brew install keith/formulae/git-pile
 
 1. Add this repo's `bin` directory to your `PATH`
 2. Install [gh](https://cli.github.com/)
+3. Install [fzy](https://github.com/jhawthorn/fzy) and `python3`
+   (required for [`git-absorb`](#git-absorb))
 
 ## Configuration
 
