@@ -260,6 +260,17 @@ case I often run `git rebasepr` locally after one of the PRs merges to
 resolve the conflicts. If you have `rerere.enabled` set globally in your
 `git` config, you may only have to resolve the conflicts once.
 
+### Dropping changes
+
+Sometimes you might submit a PR, and realize it wasn't the right
+approach. Or you might want to submit multiple PRs touching related
+areas just for testing CI, or showing an example. In this case you might
+not want these commits sitting around on your pile forever. To avoid
+this I often "drop" commits from my pile, either by using `git rebase
+-i` and deleting the lines from the file, or by using [this
+script](https://github.com/keith/dotfiles/blob/2ae59b8f2afbb2a2cea2b55ef1b37da55bd5c1d3/bin/git-droplast).
+Be careful not to drop any un-submitted work when doing this.
+
 ## Under the hood
 
 As stated above one of the advantages of `git-pile` over other stacked
