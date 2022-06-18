@@ -1,12 +1,13 @@
 # git-pile
 
-`git-pile` is a set of scripts for using a stacked-diff[^1] workflow with
-git & GitHub[^2]. There are a lot of different trade-offs for how this
-can work, `git-pile` chooses to be mostly not-magical at the cost of being
-better at handling multiple commits that _don't conflict_ with each
-other instead of chains of pull requests affecting the same code. This
-approach was conceived by [Dave Lee](https://github.com/kastiglione) and
-I while working at Lyft, you can read more about that
+`git-pile` is a set of scripts for using a stacked-diff[^1] workflow
+with git & GitHub[^2]. There are a lot of different trade-offs for how
+this can work, `git-pile` chooses to be mostly not-magical at the cost
+of being best at handling multiple commits that _don't conflict_ with
+each other instead of chains of pull requests affecting the same code.
+This approach was conceived by [Dave
+Lee](https://github.com/kastiglione) and I while working at Lyft, you
+can read more about that
 [here](https://kastiglione.github.io/git/2020/09/11/git-stacked-commits.html).
 
 [^1]: [This](https://jg.gg/2018/09/29/stacked-diffs-versus-pull-requests)
@@ -15,50 +16,34 @@ I while working at Lyft, you can read more about that
 [^2]: These scripts could be extended to support other Git hosts that
     supported similar workflows without too much work.
 
+## Benefits
+
+1. Never think about branches again
+2. Always test all of your changes integrated together on the repo's
+   main branch, even if they are submitted as separate pull requests on
+   GitHub
+3. Avoid thrashing ephemeral state such as build caches when switching
+   between different work, addressing code review feedback, etc
+
 ## Usage
-
-### Prerequisites
-
-In general the goal of using `git-pile` is for you to _never_ change
-branches again. This allows you to always test all your changes in their
-final integrated state, and reduces overhead when switching between
-working on multiple changes to address code review feedback, etc.
-
-In the following examples `git-pile` expects you to be on your repo's
-`main` branch locally with some commits you're ready to create a pull
-request for, for example:
-
-```sh
-$ git checkout main # ensure you're on the main branch
-$ # do some work
-$ git add -A
-$ git commit -m "I made some changes"
-```
-
-### Recommendations
-
-`git-pile` works best if you use the squash-and-merge strategy on GitHub.
-This is because `git-pile` treats each change on main as a single commit,
-and this way when you `git pull` after merging a PR on GitHub, the
-commit on your local branch will just disappear since the changes are
-identical. In the case you use another strategy, this may lead to
-conflicts, in this case if you're sure you want the remote changes, you
-can often just use `git rebase --skip` (if your pull initiates a rebase)
-to ignore your local commit.
 
 ### git-submitpr
 
 The `git-submitpr` is the first script you run to interact with
-`git-pile` (if you're interested in what this does specifically, jump to
-[under the hood](#under-the-hood)).
+`git-pile`. It will submit a PR on GitHub with just the most recent
+commit from your "pile" of commits on your branch. It automatically uses
+your commit message to fill in your PR title and description:
 
-It will submit a PR on GitHub with just the most recent commit on your
-"pile" of commits from your main branch, and then open the new PR in
-your browser. It automatically uses your commit message to fill in your
-PR title and description.
+```sh
+$ git checkout main # always do work on your main branch
+$ # do some work
+$ git add -A
+$ git commit -m "I made some changes"
+$ git submitpr
+```
 
-At this point you are free to move on and start working on an unrelated
-change while still on the main branch.
+Once you submit a PR you are free to move on and start working on other
+changes while still on the main branch.
 
 #### Options
 
@@ -66,14 +51,14 @@ change while still on the main branch.
   on the branch (by default `HEAD` is used). This is for the case where
   you forget to submit a PR for a commit, and then make a new commit on
   top of it.
-- All other options passed to `git-submitpr` are passed through to the
+- All other options passed to `git submitpr` are passed through to the
   underlying `gh pr create` invocation
 - TODO: support auto-merge with `gh`
 
 ### git-updatepr
 
-`git-updatepr` and `git-headpr` are commands for adding more changes to
-an existing PR. For example:
+`git-updatepr` allows you to add more changes to an existing PR. For
+example:
 
 ```sh
 $ git submitpr # Create the intitial PR
@@ -81,10 +66,10 @@ $ # get some code review feedback
 $ # make more changes
 $ git add -A
 $ git commit -m "I fixed the code review issue"
-$ git updatepr abc123 # pass the sha of the initial commit for the PR
+$ git updatepr abc123 # pass the sha of the local commit from the original the PR
 ```
 
-This will add your new commit to the PR from the referenced sha.
+This will push the new commit to the PR you created originally.
 
 #### Options
 
@@ -109,7 +94,8 @@ $ git headpr
 ```
 
 In this case `git-pile` will initiate a commit, and then run
-`git-updatepr` with the most recent sha on your branch.
+`git updatepr` with the most recent sha on your branch. This only works
+if you haven't made subsequent commits since the PR you want to update.
 
 #### Options
 
@@ -141,8 +127,8 @@ $ git status
 $ git absorb
 ```
 
-In this example `git-absorb` will prompt you to commit, and then
-automatically run `git-updatepr` updating your first commit that changed
+In this example `git absorb` will prompt you to commit, and then
+automatically run `git updatepr` updating your first commit that changed
 `file1`. It is functionally equivalent to:
 
 ```sh
@@ -151,11 +137,12 @@ $ git updatepr sha123 # the sha from the first change
 ```
 
 In the case that multiple commits in your pile touched the same files,
-`git-absorb` will prompt you to choose which which PR to update.
+`git absorb` will prompt you with a fuzzy finder to choose which PR to
+update.
 
 If you have staged files, only those will be included in the commit
-(like normal), if you don't have any staged files `git-absorb` will `git
-add` all your currently changed files before committing.
+(like normal), if you don't have any staged files `git absorb` will `git
+add` _all_ your currently changed files before committing.
 
 #### Options
 
@@ -264,7 +251,7 @@ are 2 important things to note:
 Using `git-pile` is easier in the case your changes do not conflict, but
 `git-pile` still does its best to handle resolving conflicts in the case
 they arise. For example if you submit 2 PRs that have conflicting
-changes, when you run `git-submitpr` conflicts will arise when the
+changes, when you run `git submitpr` conflicts will arise when the
 commit is being cherry picked. In this case you must resolve the
 conflicts and run `git cherry-pick --continue`. Then when you are
 merging the PRs on GitHub, likely you will have to rebase one of the PRs
@@ -277,7 +264,7 @@ resolve the conflicts. If you have `rerere.enabled` set globally in your
 
 As stated above one of the advantages of `git-pile` over other stacked
 diff workflows is relative simplicity. Here's how `git-pile` works when
-you run `git-submitpr`:
+you run `git submitpr`:
 
 1. It creates a [`git worktree`](https://git-scm.com/docs/git-worktree)
    in `~/.cache/git-pile` for the current repository
@@ -296,7 +283,7 @@ between the `git-pile` workflow and not, as long as you're aware of the
 potential for introducing conflicts you'll have to resolve later.
 
 Once the steps above have been done, all other commands like
-`git-updatepr` follow steps similar to:
+`git updatepr` follow steps similar to:
 
 1. Checkout the previously created branch in the worktree
 2. Cherry pick the new commit to the branch, squashing if requested (in
