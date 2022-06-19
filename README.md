@@ -22,8 +22,8 @@ can read more about that
 2. Always test all of your changes integrated together on the repo's
    main branch, even if they are submitted as separate pull requests on
    GitHub
-3. Avoid thrashing ephemeral state such as build caches when switching
-   between different work, addressing code review feedback, etc
+3. Avoid thrashing state such as file time stamps or build caches
+   when switching between different work
 
 ## Usage
 
