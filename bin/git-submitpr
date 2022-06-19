@@ -57,6 +57,16 @@ if ! git -C "$worktree_dir" cherry-pick "$commit" >/dev/null; then
   fi
 fi
 
+native_open () {
+  if command -v open >/dev/null; then
+    open "$1"
+  elif command -v xdg-open >/dev/null; then
+    xdg-open "$1"
+  else
+    echo "PR is created at $1"
+  fi
+}
+
 error_file=$(mktemp)
 if git -C "$worktree_dir" remote get-url mine 2>/dev/null && git -C "$worktree_dir" push --quiet --set-upstream mine "$branch_name"; then
   if command -v gh >/dev/null; then
@@ -75,7 +85,7 @@ elif git -C "$worktree_dir" push --quiet --set-upstream origin "$branch_name" 2>
     # TODO: does gh not support -C either?
     pushd "$worktree_dir" >/dev/null
     url=$(gh pr create --draft --fill --base "$remote_branch_name" "$@" | grep github.com)
-    open "$url"
+    native_open "$url"
     popd >/dev/null
   else
     echo "error: no tool to create a PR, install gh: https://cli.github.com/" >&2
