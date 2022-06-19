@@ -163,7 +163,7 @@ repo.
 Example:
 
 ```sh
-$ git rebase abc123 # the sha of the PR you want to rebase
+$ git rebasepr abc123 # the sha of the PR you want to rebase
 ```
 
 ## Installation
