@@ -13,8 +13,7 @@ if ! git show-ref --quiet "$branch_name"; then
   exit 1
 fi
 
-worktree_name=$(git roothash)
-readonly worktree_dir="$HOME/.cache/git-pile/$worktree_name"
+worktree_dir="$(git pileworktreepath)"
 if [[ ! -d "$worktree_dir" ]]; then
   git worktree add -f "$worktree_dir" "$branch_name"
 else

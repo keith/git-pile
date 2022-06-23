@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly cache_root="$HOME/.cache/git-pile"
+
+# Get the primary clone's path in the case of using worktrees
+clone_root=$(git worktree list --porcelain | head -1 | cut -d" " -f2)
+# Normalize submodule's roots from being in .git/modules to their actual directories
+clone_root=$(git -C "$clone_root" rev-parse --show-toplevel)
+relative_root=${clone_root#"$HOME"/}
+clone_path="$cache_root/$relative_root"
+
+# If the current checkout is a worktree, setup a symlink for simplicity
+current_root=$(git rev-parse --show-toplevel)
+if [[ "$clone_root" != "$current_root" ]]; then
+  worktree_root=${current_root#"$HOME"/}
+  worktree_path="$cache_root/$worktree_root"
+  if [[ ! -e "$worktree_path" && ! -L "$worktree_path" ]]; then
+    mkdir -p "$(dirname "$worktree_path")"
+    ln -s "$clone_path" "$worktree_path"
+  fi
+fi
+
+echo "$clone_path"
