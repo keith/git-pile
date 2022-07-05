@@ -23,5 +23,5 @@ do
 done
 
 head_sha=$(git rev-parse HEAD)
-git commit "${commit_args[@]:-}"
+git commit "${commit_args[@]:---}"
 git updatepr "$head_sha" "${updatepr_args[@]:-}"
