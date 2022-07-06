@@ -47,8 +47,13 @@ trap _detach_branch EXIT
 
 if ! git -C "$worktree_dir" cherry-pick "$commit" >/dev/null; then
   if git -C "$worktree_dir" mergetool; then
-    # TODO: if you mess up the cherry pick and leave with no changes this doesn't handle that, in that case we need skip or abort
-    git -C "$worktree_dir" -c core.editor=true cherry-pick --continue
+    if ! git -C "$worktree_dir" -c core.editor=true cherry-pick --continue; then
+      git -C "$worktree_dir" cherry-pick --abort || true
+      _detach_branch
+      git branch -D "$branch_name"
+      echo "error: cherry picking failed, maybe there wasn't a commit to cherry pick?" >&2
+      exit 1
+    fi
   else
     git -C "$worktree_dir" cherry-pick --abort
     _detach_branch
