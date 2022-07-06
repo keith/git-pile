@@ -12,20 +12,32 @@ if [[ $# -gt 0 ]]; then
     commit_arg="$1"
     shift
   fi
+
+  if [[ ${1:-} == "--onto" ]]; then
+    onto_ref="$2"
+    shift
+    shift
+  fi
 fi
 
 commit="$(git rev-parse "$commit_arg")"
+upstream_ref="@{upstream}"
 branch_name="${GIT_PILE_PREFIX:-}$(git show --no-patch --format=%f "$commit" | tr '[:upper:]' '[:lower:]')"
+
+if [[ -n "${onto_ref:-}" ]]; then
+  base_branch_name="${GIT_PILE_PREFIX:-}$(git show --no-patch --format=%f "$onto_ref" | tr '[:upper:]' '[:lower:]')"
+  upstream_ref="$base_branch_name@{upstream}"
+fi
 
 if git show-ref --verify --quiet refs/heads/"$branch_name"; then
   echo "error: branch named '$branch_name' already exists, maybe you've already created the PR for this commit?" >&2
   exit 1
 fi
 
-branch_with_remote=$(git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}")
+branch_with_remote=$(git rev-parse --abbrev-ref --symbolic-full-name "$upstream_ref")
 remote_branch_name="${branch_with_remote#*/}"
 
-git branch --no-track "$branch_name" "@{upstream}"
+git branch --no-track "$branch_name" "$upstream_ref"
 
 worktree_dir="$(git pileworktreepath)"
 if [[ ! -d "$worktree_dir" ]]; then
