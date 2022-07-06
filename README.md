@@ -53,6 +53,8 @@ changes while still on the main branch.
   top of it.
 - All other options passed to `git submitpr` are passed through to the
   underlying `gh pr create` invocation
+- You can stack a PR using the --onto flag. e.g `git submitpr head --onto 
+head~2`
 - TODO: support auto-merge with `gh`
 
 ### git-updatepr
