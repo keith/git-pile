@@ -18,7 +18,7 @@ commit="$(git rev-parse "$commit_arg")"
 branch_name="${GIT_PILE_PREFIX:-}$(git show --no-patch --format=%f "$commit" | tr '[:upper:]' '[:lower:]')"
 
 if git show-ref --verify --quiet refs/heads/"$branch_name"; then
-  echo "error: branch named '$branch_name' already exists" >&2
+  echo "error: branch named '$branch_name' already exists, maybe you've already created the PR for this commit?" >&2
   exit 1
 fi
 
