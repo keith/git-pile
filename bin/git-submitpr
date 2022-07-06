@@ -84,7 +84,18 @@ elif git -C "$worktree_dir" push --quiet --set-upstream origin "$branch_name" 2>
   elif command -v gh > /dev/null; then
     # TODO: does gh not support -C either?
     pushd "$worktree_dir" >/dev/null
-    url=$(gh pr create --fill --base "$remote_branch_name" "$@" | grep github.com)
+    body_args=(--fill)
+    if [[ -n ${GIT_PILE_USE_PR_TEMPLATE:-} && -f .github/pull_request_template.md ]]; then
+      subject=$(git -C "$worktree_dir" show -s --format=%s HEAD)
+      body=$(git -C "$worktree_dir" show -s --format=%b HEAD)
+      if [[ -n "$body" ]]; then
+        body=$(printf '%s\n\n%s' "$body" "$(cat .github/pull_request_template.md)")
+      else
+        body="$(cat .github/pull_request_template.md)"
+      fi
+      body_args=(--title "$subject" --body "$body")
+    fi
+    url=$(gh pr create "${body_args[@]}" --base "$remote_branch_name" "$@" | grep github.com)
     native_open "$url"
     popd >/dev/null
   else

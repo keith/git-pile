@@ -216,6 +216,11 @@ brew install keith/formulae/git-pile
   you change this after using `git-pile` to create a PR, your PRs
   created before setting the prefix will not be updatable with the other
   commands.
+- Set `GIT_PILE_USE_PR_TEMPLATE` in your shell environment if you'd like
+  `git-pile` to attempt to prefill the description of your PR with the [PR
+  template][template] file if it exists.
+
+[template]: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
 
 ## Advanced usage
 
