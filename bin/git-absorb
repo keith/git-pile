@@ -15,12 +15,6 @@ class _GitError(Exception):
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-s",
-        action="store_true",
-        dest="sign_off",
-        help="Add Signed-off-by to commit",
-    )
-    parser.add_argument(
         "--squash",
         action="store_true",
         help="Squash the commit instead of adding a new commit to the branch",
@@ -101,7 +95,7 @@ def _shas_by_file(
     return shas_by_file
 
 
-def _main(squash: bool, sign_off: bool) -> None:
+def _main(squash: bool, commit_args: List[str]) -> None:
     if not _is_in_repo():
         sys.exit("error: not in git repo")
 
@@ -155,23 +149,24 @@ def _main(squash: bool, sign_off: bool) -> None:
     if stage_first:
         _run_git_command(["add"] + changed_files)
 
-    args = []
+    args = commit_args
     if squash:
         args.append("-m 'ignore, will be squashed' -s")
-    elif sign_off:
-        args.append("-s")
 
-    code = os.system("git commit {}".format(" ".join(args)))
+    code = subprocess.Popen(["git", "commit"] + args).wait()
     if code != 0:
-        sys.exit("Not updating PR without a commit")
+        raise SystemExit("error: failed to commit, not updating PR")
 
     update_command = ["git", "updatepr", selected_sha]
     if squash:
         update_command.append("--squash")
 
-    subprocess.check_call(update_command)
+    try:
+        subprocess.check_call(update_command)
+    except subprocess.CalledProcessError:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    args = _build_parser().parse_args()
-    _main(args.squash, args.sign_off)
+    args, commit_args = _build_parser().parse_known_args()
+    _main(args.squash, commit_args)
