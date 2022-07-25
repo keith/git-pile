@@ -53,8 +53,8 @@ changes while still on the main branch.
   top of it.
 - All other options passed to `git submitpr` are passed through to the
   underlying `gh pr create` invocation
-- You can stack a PR using the --onto flag. e.g `git submitpr head --onto 
-head~2`
+- You can stack a PR using the `--onto` flag. For example: `git submitpr
+  --onto head~2`
 - TODO: support auto-merge with `gh`
 
 ### git-updatepr
@@ -279,6 +279,18 @@ this I often "drop" commits from my pile, either by using `git rebase
 -i` and deleting the lines from the file, or by using [this
 script](https://github.com/keith/dotfiles/blob/2ae59b8f2afbb2a2cea2b55ef1b37da55bd5c1d3/bin/git-droplast).
 Be careful not to drop any un-submitted work when doing this.
+
+### Stacked PRs
+
+`git-pile` supports basic PR stacking by passing the `--onto SHA` flag
+to `git submitpr`. This creates your PR targeting the underlying branch
+from the commit you pass. This assumes your other commit already has a
+PR. Unlike some other tools `git-pile` does not handle the merging and
+resolution of these PRs. When you merge the first PR in your stack,
+GitHub will automatically re-target your second PR to the correct
+branch. Unfortunately it will leave the initial commit in the branch,
+which means you have to `git rebasepr` your second commit, to make
+GitHub correctly reflect the changes in the PR.
 
 ## Under the hood
 
