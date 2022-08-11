@@ -41,7 +41,7 @@ git branch --no-track "$branch_name" "$upstream_ref"
 
 worktree_dir="$(git pileworktreepath)"
 if [[ ! -d "$worktree_dir" ]]; then
-  git worktree add -f "$worktree_dir" "$branch_name"
+  git worktree add --quiet --force "$worktree_dir" "$branch_name"
 else
   # TODO: I've had the repo be in a bad state and maybe we need a cherry pick abort here, or on the cleanup instead
   if ! git -C "$worktree_dir" switch --quiet "$branch_name"; then

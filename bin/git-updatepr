@@ -45,9 +45,9 @@ fi
 
 worktree_dir="$(git pileworktreepath)"
 if [[ ! -d "$worktree_dir" ]]; then
-  git worktree add -f "$worktree_dir" "$branch_name"
+  git worktree add --quiet --force "$worktree_dir" "$branch_name"
 else
-  git -C "$worktree_dir" switch "$branch_name"
+  git -C "$worktree_dir" switch --quiet "$branch_name"
 fi
 
 _detach_branch() {
@@ -72,7 +72,7 @@ branch_with_remote=$(git -C "$worktree_dir" rev-parse --abbrev-ref --symbolic-fu
 remote_name="${branch_with_remote%%/*}"
 remote_branch_name="${branch_with_remote#*/}"
 
-git -C "$worktree_dir" fetch "$remote_name" "$remote_branch_name"
+git -C "$worktree_dir" fetch --quiet "$remote_name" "$remote_branch_name"
 if ! git -C "$worktree_dir" diff --quiet "HEAD...@{upstream}"; then
   git -C "$worktree_dir" diff "HEAD...@{upstream}"
   answer=$(_ask "warning: upstream has new commits, would you like to pull those (or abort)? (y/n) ")
@@ -84,7 +84,9 @@ if ! git -C "$worktree_dir" diff --quiet "HEAD...@{upstream}"; then
   fi
 fi
 
-if ! git -C "$worktree_dir" cherry-pick "$new_refspec^..$base_refspec"; then
+output_file=$(mktemp)
+if ! git -C "$worktree_dir" cherry-pick "$new_refspec^..$base_refspec" >"$output_file" 2>&1; then
+  cat "$output_file" >&2
   # TODO if you exit in vim with :cq, it asks you if it was successful, i think if you hit yes it will continue even if it's not?
   if git -C "$worktree_dir" mergetool; then
     if ! git -C "$worktree_dir" -c core.editor=true cherry-pick --continue; then
@@ -99,12 +101,12 @@ if ! git -C "$worktree_dir" cherry-pick "$new_refspec^..$base_refspec"; then
 fi
 
 if [[ "$squash" == true ]]; then
-  git -C "$worktree_dir" commit -s --no-verify --amend --fixup=HEAD~
-  git -C "$worktree_dir" rebase --interactive --autosquash HEAD~2
+  git -C "$worktree_dir" commit --quiet --signoff --no-verify --amend --fixup=HEAD~
+  git -C "$worktree_dir" rebase --quiet --interactive --autosquash HEAD~2
   git -C "$worktree_dir" push --force-with-lease --quiet || echo "warning: failed to force push '$branch_name'" >&2
 else
   git -C "$worktree_dir" push --quiet || echo "warning: failed to push '$branch_name'" >&2
 fi
 
-git rebase --interactive --exec "git commit --no-verify --amend --fixup '$commit_to_update'" "$new_refspec"^
-git rebase --interactive --autosquash "$commit_to_update"^
+git rebase --quiet --interactive --exec "git commit --no-verify --amend --fixup '$commit_to_update'" "$new_refspec"^
+git rebase --quiet --interactive --autosquash "$commit_to_update"^

@@ -15,9 +15,9 @@ fi
 
 worktree_dir="$(git pileworktreepath)"
 if [[ ! -d "$worktree_dir" ]]; then
-  git worktree add -f "$worktree_dir" "$branch_name"
+  git worktree add --quiet --force "$worktree_dir" "$branch_name"
 else
-  git -C "$worktree_dir" switch "$branch_name"
+  git -C "$worktree_dir" switch --quiet "$branch_name"
 fi
 
 _detach_branch() {
