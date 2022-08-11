@@ -149,8 +149,7 @@ add` _all_ your currently changed files before committing.
 - You can pass `--squash` to squash the new commit into the initial
   commit from the PR (in this case you will not be promoted for a commit
   message)
-- TODO: all other options should be passed to `git commit`, currently
-  only `-s` is accepted
+- All other options are passed through to `git commit`
 
 ### git-rebasepr
 
