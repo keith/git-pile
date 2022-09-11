@@ -151,7 +151,7 @@ def _main(squash: bool, commit_args: List[str]) -> None:
 
     args = commit_args
     if squash:
-        args.append("-m 'ignore, will be squashed' -s")
+        args.extend(["-m 'ignore, will be squashed'", "-s"])
 
     code = subprocess.Popen(["git", "commit"] + args).wait()
     if code != 0:
