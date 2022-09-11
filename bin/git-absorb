@@ -153,7 +153,7 @@ def _main(squash: bool, commit_args: List[str]) -> None:
     if squash:
         args.extend(["-m 'ignore, will be squashed'", "-s"])
 
-    code = subprocess.Popen(["git", "commit"] + args).wait()
+    code = subprocess.Popen(["git", "commit", "--quiet"] + args).wait()
     if code != 0:
         raise SystemExit("error: failed to commit, not updating PR")
 
