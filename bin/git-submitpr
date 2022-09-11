@@ -131,8 +131,38 @@ elif git -C "$worktree_dir" push --quiet --set-upstream origin "$branch_name" 2>
       body_args=(--title "$subject" --body "$body")
     fi
 
-    if url=$(gh pr create "${body_args[@]}" --base "$remote_branch_name" "$@" | grep github.com); then
+    pr_args=()
+    merge_arg=""
+    for arg in "$@"
+    do
+      case "$arg" in
+        --merge-squash)
+          merge_arg="--squash"
+          shift
+          ;;
+        --merge-rebase)
+          merge_arg="--rebase"
+          shift
+          ;;
+        --merge)
+          merge_arg="--merge"
+          shift
+          ;;
+        *)
+          pr_args+=("$arg")
+          shift
+          ;;
+      esac
+    done
+
+    if url=$(gh pr create "${body_args[@]}" --base "$remote_branch_name" "${pr_args[@]:---}" | grep github.com); then
       native_open "$url"
+
+      # TODO: should I set subject and body?
+      if [[ -n "$merge_arg" ]] && ! gh pr merge "$url" --auto "$merge_arg"; then
+        echo "warning: failed to auto-merge PR with $merge_arg" >&2
+        exit 1
+      fi
     else
       cleanup_remote_branch
     fi
