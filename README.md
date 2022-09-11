@@ -219,6 +219,13 @@ brew install keith/formulae/git-pile
 - Set `GIT_PILE_USE_PR_TEMPLATE` in your shell environment if you'd like
   `git-pile` to attempt to prefill the description of your PR with the [PR
   template][template] file if it exists.
+- Run `git config --global pile.cleanupRemoteOnSubmitFailure true` to
+  automatically delete remote branches that mirror your local branch
+  when submitting the PR fails. This makes it easier to run `git
+  submitpr` again in the case you had a networking issue that causes the
+  submission to fail. This is off by default to avoid potentially
+  deleting a remote branch that somehow has commits that aren't on the
+  local branch.
 
 [template]: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
 

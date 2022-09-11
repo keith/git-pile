@@ -73,6 +73,10 @@ native_open () {
 }
 
 cleanup_remote_branch() {
+  if [[ "$(git config --default false --type=bool pile.cleanupRemoteOnSubmitFailure)" != true ]]; then
+    return
+  fi
+
   echo "error: failed to create PR, deleting remote branch..." >&2
   git -C "$worktree_dir" push --quiet --delete origin "$branch_name" || true
   _detach_branch
