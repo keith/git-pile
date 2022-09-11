@@ -83,6 +83,18 @@ native_open () {
   fi
 }
 
+cleanup_remote_branch() {
+  if [[ "$(git config --default false --type=bool pile.cleanupRemoteOnSubmitFailure)" != true ]]; then
+    return
+  fi
+
+  echo "error: failed to create PR, deleting remote branch..." >&2
+  git -C "$worktree_dir" push --quiet --delete origin "$branch_name" || true
+  _detach_branch
+  git branch -D "$branch_name"
+  exit 1
+}
+
 error_file=$(mktemp)
 if git -C "$worktree_dir" remote get-url mine 2>/dev/null && git -C "$worktree_dir" push --quiet --set-upstream mine "$branch_name"; then
   if command -v gh >/dev/null; then
@@ -99,7 +111,10 @@ elif git -C "$worktree_dir" push --quiet --set-upstream origin "$branch_name" 2>
   if command -v ghb > /dev/null; then
     # TODO maybe ghb should support -C ?
     pushd "$worktree_dir" >/dev/null
-    ghb pr --no-edit "$remote_branch_name" "$@"
+    if ! ghb pr --no-edit "$remote_branch_name" "$@"; then
+      cleanup_remote_branch
+    fi
+
     popd >/dev/null
   elif command -v gh > /dev/null; then
     # TODO: does gh not support -C either?
@@ -115,8 +130,13 @@ elif git -C "$worktree_dir" push --quiet --set-upstream origin "$branch_name" 2>
       fi
       body_args=(--title "$subject" --body "$body")
     fi
-    url=$(gh pr create "${body_args[@]}" --base "$remote_branch_name" "$@" | grep github.com)
-    native_open "$url"
+
+    if url=$(gh pr create "${body_args[@]}" --base "$remote_branch_name" "$@" | grep github.com); then
+      native_open "$url"
+    else
+      cleanup_remote_branch
+    fi
+
     popd >/dev/null
   else
     echo "error: no tool to create a PR, install gh: https://cli.github.com/" >&2
