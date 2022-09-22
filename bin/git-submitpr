@@ -78,7 +78,7 @@ if ! git -C "$worktree_dir" cherry-pick "$commit" >/dev/null; then
   fi
 fi
 
-native_open () {
+native_open() {
   if command -v open >/dev/null; then
     open "$1"
   elif command -v xdg-open >/dev/null; then
@@ -147,13 +147,14 @@ elif git -C "$worktree_dir" push --quiet --set-upstream origin "$branch_name" 2>
   done
 
   if url=$(gh pr create "${body_args[@]}" --base "$remote_branch_name" "${pr_args[@]:---}" | grep github.com); then
-    native_open "$url"
-
     # TODO: should I set subject and body?
     if [[ -n "$merge_arg" ]] && ! gh pr merge "$url" --auto "$merge_arg"; then
+      native_open "$url"
       echo "warning: failed to auto-merge PR with $merge_arg" >&2
       exit 1
     fi
+
+    native_open "$url"
   else
     cleanup_remote_branch
   fi
