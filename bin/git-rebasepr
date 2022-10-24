@@ -30,7 +30,10 @@ branch_with_remote=$(git rev-parse --abbrev-ref --symbolic-full-name "@{upstream
 # TODO: Might have to pass -i here sometimes
 if ! git -C "$worktree_dir" rebase "$branch_with_remote"; then
   if git -C "$worktree_dir" mergetool; then
-    GIT_EDITOR=true git -C "$worktree_dir" rebase --continue
+    if ! GIT_EDITOR=true git -C "$worktree_dir" rebase --continue; then
+      git -C "$worktree_dir" rebase --abort
+      exit 1
+    fi
   else
     git -C "$worktree_dir" rebase --abort
     exit 1
