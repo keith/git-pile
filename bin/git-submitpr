@@ -27,10 +27,10 @@ fi
 
 commit="$(git rev-parse "$commit_arg")"
 upstream_ref="@{upstream}"
-branch_name="${GIT_PILE_PREFIX:-}$(git show --no-patch --format=%f "$commit" | tr '[:upper:]' '[:lower:]')"
+branch_name="$(git pilebranchname "$commit")"
 
 if [[ -n "${onto_ref:-}" ]]; then
-  base_branch_name="${GIT_PILE_PREFIX:-}$(git show --no-patch --format=%f "$onto_ref" | tr '[:upper:]' '[:lower:]')"
+  base_branch_name="$(git pilebranchname "$onto_ref")"
   upstream_ref="$base_branch_name@{upstream}"
 fi
 
