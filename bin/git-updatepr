@@ -29,6 +29,7 @@ do
   esac
 done
 
+# TODO: I think this is broken-ish as it includes all commits in between the PR sha and the one you're passing to update, which might be unexpected
 new_refspec=$(git rev-parse "${1:-HEAD}")
 base_refspec=$(git rev-parse HEAD)
 
