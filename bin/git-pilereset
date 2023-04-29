@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ -n "${GIT_PILE_VERBOSE:-}" ]]; then
+  set -x
+fi
+
+worktree_dir="$(git pileworktreepath)"
+git worktree remove --force "$worktree_dir"
+
+# TODO: Should we optionally delete some branch?
+# TODO: Otherwise should we call it pileresetworktree?
