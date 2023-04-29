@@ -18,6 +18,7 @@ if [[ $# -gt 0 ]]; then
     shift
   fi
 
+  # TODO: Parse commit before or after onto
   if [[ ${1:-} == "--onto" ]]; then
     onto_ref="$2"
     shift
@@ -62,6 +63,7 @@ _detach_branch() {
 trap _detach_branch EXIT
 
 if ! git -C "$worktree_dir" cherry-pick "$commit" >/dev/null; then
+  # TODO: if you ctrl-c out of the merge tool, it doesn't return false it exists the script only hitting the trap, so the cherry pick is not aborted
   if git -C "$worktree_dir" mergetool; then
     if ! git -C "$worktree_dir" -c core.editor=true cherry-pick --continue; then
       git -C "$worktree_dir" cherry-pick --abort || true
