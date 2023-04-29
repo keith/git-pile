@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly ref=$1
+
+branch_name="${GIT_PILE_PREFIX:-}$(git show --no-patch --format=%f "$ref" | tr '[:upper:]' '[:lower:]' | sed 's/^\.*//')"
+echo "$branch_name"
