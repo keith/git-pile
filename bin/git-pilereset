@@ -7,7 +7,8 @@ if [[ -n "${GIT_PILE_VERBOSE:-}" ]]; then
 fi
 
 worktree_dir="$(git pileworktreepath)"
-git worktree remove --force "$worktree_dir"
+git worktree remove --force "$worktree_dir"  &> /dev/null || true
+/usr/bin/env rm "$worktree_dir" &> /dev/null || true
 
 # TODO: Should we optionally delete some branch?
 # TODO: Otherwise should we call it pileresetworktree?
