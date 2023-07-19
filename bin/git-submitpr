@@ -24,6 +24,17 @@ if [[ $# -gt 0 ]]; then
     shift
     shift
   fi
+
+  if [[ ${1:-} == "--base" ]]; then
+    base="$2"
+    shift
+    shift
+  fi
+fi
+
+if [[ -n "${onto_ref:-}" && -n "${base:-}" ]]; then
+  echo "error: cannot specify both --onto and --base" >&2
+  exit 1
 fi
 
 commit="$(git rev-parse "$commit_arg")"
@@ -33,6 +44,8 @@ branch_name="$(git pilebranchname "$commit")"
 if [[ -n "${onto_ref:-}" ]]; then
   base_branch_name="$(git pilebranchname "$onto_ref")"
   upstream_ref="$base_branch_name@{upstream}"
+elif [[ -n "${base:-}" ]]; then
+  upstream_ref="$base@{upstream}"
 fi
 
 if git show-ref --verify --quiet refs/heads/"$branch_name"; then

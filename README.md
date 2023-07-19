@@ -55,6 +55,8 @@ changes while still on the main branch.
   underlying `gh pr create` invocation
 - You can stack a PR using the `--onto` flag. For example: `git submitpr
   --onto head~2`
+- You can submit a PR targeting another base branch using the `--base`
+  flag. For example: `git submitpr --base my-feature-branch`
 - If your GitHub repo supports auto-merge, you can pass
   `--merge-rebase`, `--merge-squash`, or `--merge` when creating the PR
   to enable auto-merge with the respective method. If enabling
