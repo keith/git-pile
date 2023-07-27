@@ -61,7 +61,7 @@ def _get_modified_files() -> List[str]:
 
 def _get_possible_shas() -> List[str]:
     return _run_git_command(
-        ["log", "--pretty=%H", "@{upstream}..HEAD"]
+        ["log", "--no-show-signature", "--pretty=%H", "@{upstream}..HEAD"]
     ).splitlines()
 
 
@@ -79,7 +79,7 @@ def _get_changed_files() -> Tuple[List[str], bool]:
 
 def _files_for_sha(sha: str) -> List[str]:
     return _run_git_command(
-        ["show", "--name-only", "--pretty=", sha]
+        ["show", "--no-show-signature", "--name-only", "--pretty=", sha]
     ).splitlines()
 
 
