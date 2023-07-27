@@ -2,8 +2,10 @@
 
 set -euo pipefail
 
+quiet_arg="--quiet"
 if [[ -n "${GIT_PILE_VERBOSE:-}" ]]; then
   set -x
+  quiet_arg=""
 fi
 
 if ! command -v gh > /dev/null; then
@@ -48,7 +50,7 @@ elif [[ -n "${base:-}" ]]; then
   upstream_ref="$base@{upstream}"
 fi
 
-if git show-ref --verify --quiet refs/heads/"$branch_name"; then
+if git show-ref --verify $quiet_arg refs/heads/"$branch_name"; then
   echo "error: branch named '$branch_name' already exists, maybe you've already created the PR for this commit?" >&2
   exit 1
 fi
@@ -60,17 +62,17 @@ git branch --no-track "$branch_name" "$upstream_ref"
 
 worktree_dir="$(git pileworktreepath)"
 if [[ ! -d "$worktree_dir" ]]; then
-  git worktree add --quiet --force "$worktree_dir" "$branch_name"
+  git worktree add $quiet_arg --force "$worktree_dir" "$branch_name"
 else
   # TODO: I've had the repo be in a bad state and maybe we need a cherry pick abort here, or on the cleanup instead
-  if ! git -C "$worktree_dir" switch --quiet "$branch_name"; then
+  if ! git -C "$worktree_dir" switch $quiet_arg "$branch_name"; then
     git branch -D "$branch_name"
     exit 1
   fi
 fi
 
 _detach_branch() {
-  git -C "$worktree_dir" switch --detach --quiet
+  git -C "$worktree_dir" switch --detach $quiet_arg
 }
 
 trap _detach_branch EXIT
@@ -116,14 +118,14 @@ cleanup_remote_branch() {
 }
 
 error_file=$(mktemp)
-if git -C "$worktree_dir" remote get-url mine 2>/dev/null && git -C "$worktree_dir" push --quiet --set-upstream mine "$branch_name"; then
+if git -C "$worktree_dir" remote get-url mine 2>/dev/null && git -C "$worktree_dir" push $quiet_arg --set-upstream mine "$branch_name"; then
   # TODO: 'origin' might not be the only option
   origin_url=$(git -C "$worktree_dir" remote get-url origin)
   # TODO: does gh not support -C either?
   pushd "$worktree_dir" >/dev/null
   gh pr create --web --repo "$origin_url" --base "$remote_branch_name"
   popd >/dev/null
-elif git -C "$worktree_dir" push --quiet --set-upstream origin "$branch_name" 2> "$error_file"; then
+elif git -C "$worktree_dir" push $quiet_arg --set-upstream origin "$branch_name" 2> "$error_file"; then
   # TODO: does gh not support -C either?
   pushd "$worktree_dir" >/dev/null
   body_args=(--fill)
