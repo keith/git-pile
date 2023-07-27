@@ -121,7 +121,7 @@ if git -C "$worktree_dir" remote get-url mine 2>/dev/null && git -C "$worktree_d
   origin_url=$(git -C "$worktree_dir" remote get-url origin)
   # TODO: does gh not support -C either?
   pushd "$worktree_dir" >/dev/null
-  gh pr create --web --repo "$origin_url" --base "$remote_branch_name" || cleanup_remote_branch
+  gh pr create --web --repo "$origin_url" --base "$remote_branch_name"
   popd >/dev/null
 elif git -C "$worktree_dir" push --quiet --set-upstream origin "$branch_name" 2> "$error_file"; then
   # TODO: does gh not support -C either?
