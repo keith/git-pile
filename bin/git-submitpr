@@ -118,14 +118,14 @@ cleanup_remote_branch() {
 }
 
 error_file=$(mktemp)
-if git -C "$worktree_dir" remote get-url mine 2>/dev/null && git -C "$worktree_dir" push $quiet_arg --set-upstream mine "$branch_name"; then
+if git -C "$worktree_dir" remote get-url mine 2>/dev/null && git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream mine "$branch_name"; then
   # TODO: 'origin' might not be the only option
   origin_url=$(git -C "$worktree_dir" remote get-url origin)
   # TODO: does gh not support -C either?
   pushd "$worktree_dir" >/dev/null
   gh pr create --web --repo "$origin_url" --base "$remote_branch_name"
   popd >/dev/null
-elif git -C "$worktree_dir" push $quiet_arg --set-upstream origin "$branch_name" 2> "$error_file"; then
+elif git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream origin "$branch_name" 2> "$error_file"; then
   # TODO: does gh not support -C either?
   pushd "$worktree_dir" >/dev/null
   body_args=(--fill)
