@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -euo pipefail
+
+quiet_arg="--quiet"
+if [[ -n "${GIT_PILE_VERBOSE:-}" ]]; then
+  set -x
+  quiet_arg=""
+fi
+
+if [[ $# -ne 1 ]]; then
+  echo "usage: git pilecleanupremotebranch <branch-name|sha>"
+  exit 1
+fi
+
+branch_name="$1"
+if ! git show-ref $quiet_arg refs/heads/"$branch_name"; then
+  branch_name="$(git pilebranchname "$branch_name")"
+fi
+
+if ! git show-ref $quiet_arg refs/heads/"$branch_name"; then
+  echo "error: branch named '$branch_name' does not exist"
+  exit 1
+fi
+
+worktree_dir="$(git pileworktreepath)"
+git -C "$worktree_dir" push $quiet_arg --delete origin "$branch_name" || true
+git -C "$worktree_dir" switch --detach $quiet_arg
+git branch -D "$branch_name"
