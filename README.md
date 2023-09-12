@@ -239,7 +239,7 @@ brew install keith/formulae/git-pile
 
 - You can use `git-pile` with GitLab. Enable GitLab mode by running
  `git config pile.gitlabModeEnabled true`. Also set your GitLab URL via
- `git config pile.gitlabMergeRequestsURL "https://gitlab.com/{group}/{project}/merge_requests/"`
+ `git config pile.gitlabMergeRequestsURL "https://gitlab.com/{group}/{project}/-/merge_requests/new"`
 
 ## Advanced usage
 

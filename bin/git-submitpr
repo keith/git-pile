@@ -13,7 +13,7 @@ gitlab_url=$(git config --default '' pile.gitlabMergeRequestsURL)
 
 if [[ $gitlab_mode_enabled = true ]]; then
   if [[ -z $gitlab_url ]]; then
-    echo "error: GitLab is enabled, but no URL is set, run 'git config pile.gitlabMergeRequestsURL "https://gitlab.com/{group}/{project}/merge_requests/' to configure it" >&2
+    echo "error: GitLab is enabled, but no URL is set, run 'git config pile.gitlabMergeRequestsURL \"https://gitlab.com/{group}/{project}/-/merge_requests/new\"' to configure it" >&2
     exit 1
   fi
 else
@@ -126,7 +126,7 @@ cleanup_remote_branch() {
 }
 
 gitlab_create_pr() {
-  native_open "$gitlab_url/new?merge_request[source_branch]=$1&merge_request[target_branch]=$2"
+  native_open "$gitlab_url?merge_request[source_branch]=$1&merge_request[target_branch]=$2"
 }
 
 error_file=$(mktemp)
