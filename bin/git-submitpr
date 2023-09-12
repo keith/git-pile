@@ -8,9 +8,19 @@ if [[ -n "${GIT_PILE_VERBOSE:-}" ]]; then
   quiet_arg=""
 fi
 
-if ! command -v gh > /dev/null; then
-  echo "error: missing gh, install here: https://cli.github.com" >&2
-  exit 1
+gitlab_mode_enabled=$(git config --default false --type=bool pile.gitlabModeEnabled)
+gitlab_url=$(git config --default '' pile.gitlabMergeRequestsURL)
+
+if [[ $gitlab_mode_enabled = true ]]; then
+  if [[ -z $gitlab_url ]]; then
+    echo "error: GitLab is enabled, but no URL is set, run 'git config pile.gitlabMergeRequestsURL \"https://gitlab.com/{group}/{project}/-/merge_requests/new\"' to configure it" >&2
+    exit 1
+  fi
+else
+  if ! command -v gh > /dev/null; then
+    echo "error: missing gh, install here: https://cli.github.com" >&2
+    exit 1
+  fi
 fi
 
 commit_arg=HEAD
@@ -115,13 +125,21 @@ cleanup_remote_branch() {
   exit 1
 }
 
+gitlab_create_pr() {
+  native_open "$gitlab_url?merge_request[source_branch]=$1&merge_request[target_branch]=$2"
+}
+
 error_file=$(mktemp)
 if git -C "$worktree_dir" remote get-url mine 2>/dev/null && git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream mine "$branch_name"; then
   # TODO: 'origin' might not be the only option
   origin_url=$(git -C "$worktree_dir" remote get-url origin)
   # TODO: does gh not support -C either?
   pushd "$worktree_dir" >/dev/null
-  gh pr create --web --repo "$origin_url" --base "$remote_branch_name"
+  if [[ $gitlab_mode_enabled = true ]]; then
+    gitlab_create_pr "$branch_name" "$remote_branch_name"
+  else
+    gh pr create --web --repo "$origin_url" --base "$remote_branch_name"
+  fi
   popd >/dev/null
 elif git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream origin "$branch_name" 2> "$error_file"; then
   # TODO: does gh not support -C either?
@@ -162,17 +180,21 @@ elif git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream origin "$
     esac
   done
 
-  if url=$(gh pr create "${body_args[@]}" --base "$remote_branch_name" "${pr_args[@]:---}" | grep github.com); then
-    # TODO: should I set subject and body?
-    if [[ -n "$merge_arg" ]] && ! gh pr merge "$url" --auto "$merge_arg"; then
-      native_open "$url"
-      echo "warning: failed to auto-merge PR with $merge_arg" >&2
-      exit 1
-    fi
-
-    native_open "$url"
+  if [[ $gitlab_mode_enabled = true ]]; then
+    gitlab_create_pr "$branch_name" "$remote_branch_name"
   else
-    cleanup_remote_branch
+    if url=$(gh pr create "${body_args[@]}" --base "$remote_branch_name" "${pr_args[@]:---}" | grep github.com); then
+      # TODO: should I set subject and body?
+      if [[ -n "$merge_arg" ]] && ! gh pr merge "$url" --auto "$merge_arg"; then
+        native_open "$url"
+        echo "warning: failed to auto-merge PR with $merge_arg" >&2
+        exit 1
+      fi
+
+      native_open "$url"
+    else
+      cleanup_remote_branch
+    fi
   fi
 
   popd >/dev/null
