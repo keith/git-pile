@@ -13,7 +13,7 @@ gitlab_url=$(git config --default '' pile.gitlabMergeRequestsURL)
 
 if [[ $gitlab_mode_enabled = true ]]; then
   if [[ -z $gitlab_url ]]; then
-    echo "error: gitlab_mode enabled, but pile.gitlabMergeRequestsURL is not set" >&2
+    echo "error: GitLab is enabled, but no URL is set, run 'git config pile.gitlabMergeRequestsURL "https://gitlab.com/{group}/{project}/merge_requests/' to configure it" >&2
     exit 1
   fi
 else
