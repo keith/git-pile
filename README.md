@@ -235,6 +235,12 @@ brew install keith/formulae/git-pile
 
 [template]: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository
 
+### GitLab support
+
+- You can use `git-pile` with GitLab. Enable GitLab mode by running
+ `git config pile.gitlabModeEnabled true`. Also set your GitLab URL via
+ `git config pile.gitlabMergeRequestsURL "https://gitlab.com/{group}/{project}/merge_requests/"`
+
 ## Advanced usage
 
 ### Squash and merge
