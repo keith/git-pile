@@ -9,22 +9,18 @@ if [[ -n "${GIT_PILE_VERBOSE:-}" ]]; then
 fi
 
 gitlab_mode_enabled=$(git config --default false --type=bool pile.gitlabModeEnabled)
-gitlab_url=$(git config --default '' pile.gitlabMergeRequestsURL)
 
 if [[ $gitlab_mode_enabled = true ]]; then
-  if [[ -z "$gitlab_url" ]]; then
-    origin_url=$(git remote get-url origin | sed 's/\.git$//')
-    ssh_pattern="^git@(git\.)?([^:]+):(.+)$"
-    https_pattern="^https:\/\/(.+)$"
-    if [[ $origin_url =~ $ssh_pattern ]]; then
-      gitlab_url="https://${BASH_REMATCH[2]}/${BASH_REMATCH[3]}/-/merge_requests/new"
-    elif [[ $origin_url =~ $https_pattern ]]; then
-      gitlab_url="https://${BASH_REMATCH[1]}/-/merge_requests/new"
-    else
-      echo "error: Cannot derive GitLab merge request URL from origin"
-      echo "error: GitLab is enabled, but no URL is set, run 'git config pile.gitlabMergeRequestsURL \"https://gitlab.com/{group}/{project}/-/merge_requests/new\"' to configure it" >&2
-      exit 1
-    fi
+  origin_url=$(git remote get-url origin | sed 's/\.git$//')
+  ssh_pattern="^git@(git\.)?([^:]+):(.+)$"  # git@git.gitlab.companydomain.app:mobile/ios
+  https_pattern="^https:\/\/(.+)$"          # https://gitlab.companydomain.app/mobile/ios
+  if [[ $origin_url =~ $ssh_pattern ]]; then
+    gitlab_url="https://${BASH_REMATCH[2]}/${BASH_REMATCH[3]}/-/merge_requests/new"
+  elif [[ $origin_url =~ $https_pattern ]]; then
+    gitlab_url="https://${BASH_REMATCH[1]}/-/merge_requests/new"
+  else
+    echo "error: Cannot derive GitLab merge request URL from origin"
+    exit 1
   fi
 else
   if ! command -v gh > /dev/null; then
