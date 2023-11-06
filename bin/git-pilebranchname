@@ -4,5 +4,5 @@ set -euo pipefail
 
 readonly ref=$1
 
-branch_name="${GIT_PILE_PREFIX:-}$(git show --no-patch --no-show-signature --format=%f "$ref" | tr '[:upper:]' '[:lower:]' | sed 's/^\.*//')"
+branch_name="${GIT_PILE_PREFIX:-}$(git show --no-patch --no-show-signature --format=%f "$ref" | tr '[:upper:]' '[:lower:]' | sed -e 's/^\.*//' -e 's/\.lock$/-lock/')"
 echo "$branch_name"
