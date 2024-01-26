@@ -33,6 +33,11 @@ done
 new_refspec=$(git rev-parse "${1:-HEAD}")
 base_refspec=$(git rev-parse HEAD)
 
+if [[ "$new_refspec" != "$base_refspec" ]]; then
+  echo "error: need to fix before allowing this" >&2
+  exit 1
+fi
+
 if ! git cat-file -e "$commit_to_update" 2> /dev/null; then
   echo "error: invalid commit sha: '$commit_to_update'" >&2
   exit 1
