@@ -199,7 +199,9 @@ brew install keith/formulae/git-pile
 
 - Run `git config --global rerere.enabled true` to save conflict
   resolution outcomes so that in the case that you hit conflicts you
-  only have to resolve them once.
+  only have to resolve them once. If you enable this setting you also
+  need to run `git config --global rerere.autoupdate true` otherwise
+  previous resolutions will not be automatically staged.
 - Run `git config --global pull.rebase true` to use the rebase strategy
   when pulling from the remote. This way when you run `git pull` you
   will be able to easily skip commits with `git rebase --skip` that were
