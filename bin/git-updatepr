@@ -7,7 +7,7 @@ if [[ -n "${GIT_PILE_VERBOSE:-}" ]]; then
 fi
 
 if [[ $# -lt 1 ]]; then
-  echo "usage: $0 <new_sha> [--squash] [<sha_to_update>]" >&2
+  echo "usage: $0 <sha_or_branch_to_update> [--squash]" >&2
   exit 1
 fi
 
