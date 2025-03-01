@@ -13,20 +13,8 @@ fi
 
 export GIT_SEQUENCE_EDITOR=true
 
-# Check if the input is a branch name
-if git show-ref --quiet --verify "refs/heads/$1"; then
-  branch_name="$1"
-  commit_to_update=$(git rev-parse --verify "$1" 2>/dev/null)
-else
-  branch_name="$(git pilebranchname "$1")"
-  commit_to_update="$1"
-fi
-
-# Check if we got a valid SHA
-if ! git cat-file -e "$commit_to_update" 2>/dev/null; then
-  echo "error: invalid commit sha or branch name: '$1'" >&2
-  exit 1
-fi
+readonly sha_or_branch_to_update=$1
+shift
 
 squash=false
 for arg in "$@"
@@ -50,6 +38,22 @@ if [[ "$new_refspec" != "$base_refspec" ]]; then
   exit 1
 fi
 
+# Get the commit to update and the branch name
+if git show-ref --quiet --verify "refs/heads/$sha_or_branch_to_update"; then
+  commit_to_update=$(git rev-parse --verify "$sha_or_branch_to_update" 2>/dev/null)
+  branch_name="$sha_or_branch_to_update"
+else
+  commit_to_update="$sha_or_branch_to_update"
+  branch_name="$(git pilebranchname "$sha_or_branch_to_update")"
+fi
+
+# Check if we got a valid SHA
+if ! git cat-file -e "$commit_to_update" 2>/dev/null; then
+  echo "error: invalid commit sha or branch name: '$1'" >&2
+  exit 1
+fi
+
+# Check if we got a valid branch
 if ! git show-ref --quiet "$branch_name"; then
   echo "error: branch '$branch_name' doesn't exist" >&2
   exit 1
