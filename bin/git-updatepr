@@ -42,7 +42,7 @@ fi
 if git show-ref --quiet --verify "refs/heads/$sha_or_branch_to_update"; then
   branch_name="$sha_or_branch_to_update"
   commit_to_update=$(git rev-parse --verify "$branch_name" 2>/dev/null)
-elif ! git cat-file -e "$sha_or_branch_to_update" 2>/dev/null; then
+elif git cat-file -e "$sha_or_branch_to_update" 2>/dev/null; then
   commit_to_update="$sha_or_branch_to_update"
   branch_name="$(git pilebranchname "$commit_to_update")"
 
