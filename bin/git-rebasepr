@@ -6,7 +6,26 @@ if [[ -n "${GIT_PILE_VERBOSE:-}" ]]; then
   set -x
 fi
 
-readonly commit_to_rebase=${1:-HEAD}
+rebase_args=()
+commit=""
+for arg in "$@"
+do
+  case "$arg" in
+    -i)
+      rebase_args+=("-i")
+      shift
+      ;;
+    *)
+      if [[ -n "$commit" ]]; then
+        echo "error: multiple commit args passed, '$commit' and '$arg'" >&2
+        exit 1
+      fi
+      commit="$arg"
+      ;;
+  esac
+done
+
+readonly commit_to_rebase=${commit:-HEAD}
 branch_name="$(git pilebranchname "$commit_to_rebase")"
 if ! git show-ref --quiet "$branch_name"; then
   echo "error: branch '$branch_name' doesn't exist" >&2
@@ -27,8 +46,8 @@ _detach_branch() {
 trap _detach_branch EXIT
 
 branch_with_remote=$(git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}")
-# TODO: Might have to pass -i here sometimes
-if ! git -C "$worktree_dir" rebase "$branch_with_remote"; then
+if ! git -C "$worktree_dir" rebase "$branch_with_remote" "${rebase_args[@]:---}"; then
+  # TODO: if multiple commits conflict this only handles the first one, after the continue it fails again, we need another mergetool call, in a loop
   if git -C "$worktree_dir" mergetool; then
     if ! GIT_EDITOR=true git -C "$worktree_dir" rebase --continue; then
       git -C "$worktree_dir" rebase --abort
