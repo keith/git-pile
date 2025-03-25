@@ -136,19 +136,26 @@ gitlab_create_pr() {
 }
 
 error_file=$(mktemp)
-if git -C "$worktree_dir" remote get-url mine >/dev/null 2>&1 && git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream mine "$branch_name"; then
-  # TODO: 'origin' might not be the only option
-  origin_url=$(git -C "$worktree_dir" remote get-url origin)
-  # TODO: does gh not support -C either?
-  pushd "$worktree_dir" >/dev/null
-  if [[ $gitlab_mode_enabled = true ]]; then
-    gitlab_create_pr "$branch_name" "$remote_branch_name"
-  else
-    if url=$(gh pr create --fill --repo "$origin_url" --base "$remote_branch_name" | grep github.com); then
-      native_open "$url"
+if git -C "$worktree_dir" remote get-url mine >/dev/null 2>&1; then
+  if git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream mine "$branch_name"; then
+    # TODO: 'origin' might not be the only option
+    origin_url=$(git -C "$worktree_dir" remote get-url origin)
+    # TODO: does gh not support -C either?
+    pushd "$worktree_dir" >/dev/null
+    if [[ $gitlab_mode_enabled = true ]]; then
+      gitlab_create_pr "$branch_name" "$remote_branch_name"
+    else
+      if url=$(gh pr create --fill --repo "$origin_url" --base "$remote_branch_name" | grep github.com); then
+        native_open "$url"
+      fi
     fi
+    popd >/dev/null
+  else
+    echo "error: failed to create remote branch: $(cat "$error_file")" >&2
+    _detach_branch
+    git branch -D "$branch_name"
+    exit 1
   fi
-  popd >/dev/null
 elif git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream origin "$branch_name" 2> "$error_file"; then
   # TODO: does gh not support -C either?
   pushd "$worktree_dir" >/dev/null
