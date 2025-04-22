@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+
+from dataclasses import dataclass
+import argparse
+import collections
+import subprocess
+
+
+class _GitError(Exception):
+    pass
+
+
+@dataclass
+class _Metadata:
+    commit: str
+    url: str
+    base: str | None
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("commit", help="The commit to land")
+    return parser
+
+
+def _run_git_command(args: list[str]) -> str:
+    try:
+        output: bytes = subprocess.check_output(["git"] + args)
+        # TODO: got an exception here at some point
+        return output.strip().decode("utf-8")
+    except subprocess.CalledProcessError:
+        raise _GitError()
+    except UnicodeDecodeError:
+        print(f"error: output was {output}")
+        raise
+
+
+def _get_possible_shas() -> list[str]:
+    return _run_git_command(
+        ["log", "--no-show-signature", "--pretty=%H", "@{upstream}..HEAD"]
+    ).splitlines()
+
+
+def _get_metadata(commit: str) -> _Metadata:
+    try:
+        notes = _run_git_command(["notes", "show", commit]).strip()
+    except _GitError:
+        raise SystemExit(f"error: no notes found for {commit}")
+
+    url = None
+    base = None
+    for line in notes.splitlines():
+        print("1", line)
+        if line.startswith("Pile-URL: "):
+            url = line[len("Pile-URL: ") :]
+        if line.startswith("Pile-Base: "):
+            base = line[len("Pile-Base: ") :]
+
+    if not url:
+        raise SystemExit(f"URL not found in notes: {notes}")
+
+    return _Metadata(commit, url, base)
+
+
+def _main(commit: str) -> None:
+    # Normalize HEAD -> commit, etc
+    commit = _run_git_command(["rev-parse", commit])
+
+    metadata = _get_metadata(commit)
+
+    branch_being_merged = _run_git_command(["pilebranchname", commit])
+    print("2", branch_being_merged)
+
+    subprocess.check_call(["gh", "pr", "merge", metadata.url, "--squash"])
+    try:
+        # TODO: This can fail for a conflict, we should allow resolution here, which might just be skipping
+        _run_git_command(["pull"])
+    except _GitError:
+        raise SystemExit(f"error: failed to pull, dependent PRs have not be rebased")
+
+    _run_git_command(["notes", "remove", commit, "--ignore-missing"])
+
+    potential_rebases = collections.defaultdict(list)
+    for commit in _get_possible_shas():
+        try:
+            metadata = _get_metadata(commit)
+        except _GitError:
+            continue
+
+        if not metadata.base:
+            continue
+
+        potential_rebases[metadata.base].append(metadata)
+
+    queue = collections.deque([branch_being_merged])
+    while queue:
+        base = queue.popleft()
+        while metadatas := potential_rebases.get(base):
+            for metadata in metadatas:
+                # TODO: second level rebases don't work, rebasepr doesn't respect --onto branches
+                if base == branch_being_merged:
+                    _run_git_command(["rebasepr", metadata.commit])
+                else:
+                    _run_git_command(["rebasepr", metadata.commit, base])
+
+                base = _run_git_command(["pilebranchname", metadata.commit])
+                queue.append(base)
+
+
+if __name__ == "__main__":
+    args = _build_parser().parse_args()
+    _main(args.commit)

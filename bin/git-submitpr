@@ -135,6 +135,16 @@ gitlab_create_pr() {
   native_open "$gitlab_url?merge_request[source_branch]=$1&merge_request[target_branch]=$2"
 }
 
+store_and_open_url() {
+  if [[ -n "${onto_ref:-}" ]]; then
+    git notes add -f "$commit" -m "Pile-URL: $1
+Pile-Base: $(git pilebranchname "$onto_ref")"
+  else
+    git notes add -f "$commit" -m "Pile-URL: $1"
+  fi
+  native_open "$1"
+}
+
 error_file=$(mktemp)
 if git -C "$worktree_dir" remote get-url mine >/dev/null 2>&1; then
   if git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream mine "$branch_name"; then
@@ -146,7 +156,7 @@ if git -C "$worktree_dir" remote get-url mine >/dev/null 2>&1; then
       gitlab_create_pr "$branch_name" "$remote_branch_name"
     else
       if url=$(gh pr create --fill --repo "$origin_url" --base "$remote_branch_name" "${pr_args[@]:---}" | grep github.com); then
-        native_open "$url"
+        store_and_open_url "$url"
       fi
     fi
     popd >/dev/null
@@ -201,12 +211,12 @@ elif git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream origin "$
     if url=$(gh pr create "${body_args[@]}" --base "$remote_branch_name" "${pr_args[@]:---}" | grep github.com); then
       # TODO: should I set subject and body?
       if [[ -n "$merge_arg" ]] && ! gh pr merge "$url" --auto "$merge_arg"; then
-        native_open "$url"
+        store_and_open_url "$url"
         echo "warning: failed to auto-merge PR with $merge_arg" >&2
         exit 1
       fi
 
-      native_open "$url"
+      store_and_open_url "$url"
     else
       cleanup_remote_branch
     fi
