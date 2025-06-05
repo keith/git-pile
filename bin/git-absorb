@@ -7,6 +7,8 @@ import os
 import subprocess
 import sys
 
+RED = "\033[91m"
+RESET = "\033[0m"
 
 class _GitError(Exception):
     pass
@@ -139,6 +141,9 @@ def _main(squash: bool, commit_args: List[str]) -> None:
             selected_line = subprocess.check_output(
                 ["fzy"], input="\n".join(sorted(option_lines)).encode()
             ).decode()
+        except FileNotFoundError:
+            sys.exit(f"{RED}error: 'fzy' was not found. Please install 'fzy' and make it available in your $PATH.\n"
+                     f"Learn more at: https://github.com/keith/git-pile/blob/main/README.md#manually{RESET}")
         except subprocess.CalledProcessError:
             sys.exit(1)
 
