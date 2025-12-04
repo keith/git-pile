@@ -145,7 +145,7 @@ if git -C "$worktree_dir" remote get-url mine >/dev/null 2>&1; then
     if [[ $gitlab_mode_enabled = true ]]; then
       gitlab_create_pr "$branch_name" "$remote_branch_name"
     else
-      if url=$(gh pr create --fill --repo "$origin_url" --base "$remote_branch_name" | grep github.com); then
+      if url=$(gh pr create --fill --repo "$origin_url" --base "$remote_branch_name" "${pr_args[@]:---}" | grep github.com); then
         native_open "$url"
       fi
     fi
