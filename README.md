@@ -180,6 +180,12 @@ $ git rebasepr abc123 # the sha of the PR you want to rebase
 brew install keith/formulae/git-pile
 ```
 
+### With Nix (flake)
+
+```
+nix profile install .#git-pile
+```
+
 ### Manually
 
 1. Add this repo's `bin` directory to your `PATH`
