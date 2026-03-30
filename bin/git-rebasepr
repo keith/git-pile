@@ -17,10 +17,10 @@ do
       ;;
     *)
       if [[ -n "$commit" ]]; then
-        echo "error: multiple commit args passed, '$commit' and '$arg'" >&2
-        exit 1
+        rebase_args+=("$arg")
+      else
+        commit="$arg"
       fi
-      commit="$arg"
       ;;
   esac
 done
