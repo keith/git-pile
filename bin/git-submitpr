@@ -135,6 +135,30 @@ gitlab_create_pr() {
   native_open "$gitlab_url?merge_request[source_branch]=$1&merge_request[target_branch]=$2"
 }
 
+pr_args=()
+merge_arg=""
+for arg in "$@"
+do
+  case "$arg" in
+    --merge-squash)
+      merge_arg="--squash"
+      shift
+      ;;
+    --merge-rebase)
+      merge_arg="--rebase"
+      shift
+      ;;
+    --merge)
+      merge_arg="--merge"
+      shift
+      ;;
+    *)
+      pr_args+=("$arg")
+      shift
+      ;;
+  esac
+done
+
 error_file=$(mktemp)
 if git -C "$worktree_dir" remote get-url mine >/dev/null 2>&1; then
   if git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream mine "$branch_name"; then
@@ -170,30 +194,6 @@ elif git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream origin "$
     fi
     body_args=(--title "$subject" --body "$body")
   fi
-
-  pr_args=()
-  merge_arg=""
-  for arg in "$@"
-  do
-    case "$arg" in
-      --merge-squash)
-        merge_arg="--squash"
-        shift
-        ;;
-      --merge-rebase)
-        merge_arg="--rebase"
-        shift
-        ;;
-      --merge)
-        merge_arg="--merge"
-        shift
-        ;;
-      *)
-        pr_args+=("$arg")
-        shift
-        ;;
-    esac
-  done
 
   if [[ $gitlab_mode_enabled = true ]]; then
     gitlab_create_pr "$branch_name" "$remote_branch_name"
