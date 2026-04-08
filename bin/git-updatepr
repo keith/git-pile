@@ -16,6 +16,12 @@ export GIT_SEQUENCE_EDITOR=true
 readonly sha_or_branch_to_update=$1
 shift
 
+# If HEAD is already a PR, error, pushing a PR onto another is likely not what the user wants
+if git show "$(git pilebranchname HEAD)" >/dev/null 2>/dev/null; then
+  echo "error: a pull request exists for HEAD already, are you updating a PR onto another PR?" >&2
+  exit 1
+fi
+
 squash=false
 for arg in "$@"
 do
