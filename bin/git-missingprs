@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+while IFS= read -r commit; do
+  [[ -z "$commit" ]] && continue
+  branch_name="$(git pilebranchname "$commit")"
+  if ! git show-ref --verify --quiet "refs/heads/$branch_name"; then
+    git -c color.ui=always --no-pager log --oneline -n 1 "$commit" | (grep -v "LOCAL ONLY" || true)
+  fi
+done < <(git rev-list "@{upstream}..HEAD")
