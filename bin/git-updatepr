@@ -16,13 +16,8 @@ export GIT_SEQUENCE_EDITOR=true
 readonly sha_or_branch_to_update=$1
 shift
 
-# If HEAD is already a PR, error, pushing a PR onto another is likely not what the user wants
-if git show "$(git pilebranchname HEAD)" >/dev/null 2>/dev/null; then
-  echo "error: a pull request exists for HEAD already, are you updating a PR onto another PR?" >&2
-  exit 1
-fi
-
 squash=false
+force=false
 for arg in "$@"
 do
   case "$arg" in
@@ -30,10 +25,24 @@ do
       squash=true
       shift
       ;;
+    --force)
+      force=true
+      shift
+      ;;
     *)
       ;;
   esac
 done
+
+# If HEAD is already a PR, error, pushing a PR onto another is likely not what the user wants
+if git show "$(git pilebranchname HEAD)" >/dev/null 2>/dev/null; then
+  if [[ "$force" == true ]]; then
+    echo "warning: a pull request exists for HEAD already, ignoring this check because --force was passed" >&2
+  else
+    echo "error: a pull request exists for HEAD already, are you updating a PR onto another PR? Pass --force to ignore this check" >&2
+    exit 1
+  fi
+fi
 
 # TODO: I think this is broken-ish as it includes all commits in between the PR sha and the one you're passing to update, which might be unexpected
 new_refspec=$(git rev-parse "${1:-HEAD}")
