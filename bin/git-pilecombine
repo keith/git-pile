@@ -1,0 +1,233 @@
+#!/usr/bin/env python3
+
+import os
+import subprocess
+import sys
+
+
+class _GitError(Exception):
+    pass
+
+
+def _run_git_command(args: list[str], cwd: str | None = None) -> str:
+    command = ["git"]
+    if cwd is not None:
+        command.extend(["-C", cwd])
+    command.extend(args)
+
+    try:
+        output = subprocess.check_output(command, stderr=subprocess.PIPE)
+        return output.strip().decode("utf-8")
+    except subprocess.CalledProcessError as error:
+        stderr = error.stderr.decode("utf-8", errors="replace").strip()
+        raise _GitError(stderr) from error
+    except UnicodeDecodeError:
+        print(f"error: output was {output}")
+        raise
+
+
+def _git_check_call(args: list[str], cwd: str | None = None) -> None:
+    command = ["git"]
+    if cwd is not None:
+        command.extend(["-C", cwd])
+    command.extend(args)
+    subprocess.check_call(command)
+
+
+def _git_check(args: list[str], cwd: str | None = None) -> bool:
+    command = ["git"]
+    if cwd is not None:
+        command.extend(["-C", cwd])
+    command.extend(args)
+    return subprocess.run(
+        command,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    ).returncode == 0
+
+
+def _git_run(args: list[str], cwd: str | None = None) -> subprocess.CompletedProcess:
+    command = ["git"]
+    if cwd is not None:
+        command.extend(["-C", cwd])
+    command.extend(args)
+    return subprocess.run(command, check=False)
+
+
+def _worktree_paths() -> list[str]:
+    output = subprocess.check_output(
+        ["git", "worktree", "list", "--porcelain", "-z"]
+    ).decode("utf-8")
+    paths = []
+    for line in output.split("\0"):
+        if line.startswith("worktree "):
+            paths.append(line.removeprefix("worktree "))
+    return paths
+
+
+def _upstream_ref(cwd: str | None = None) -> str:
+    return _run_git_command(
+        ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
+        cwd=cwd,
+    )
+
+
+def _commits_ahead_of_upstream(upstream: str, cwd: str | None = None) -> list[str]:
+    return _run_git_command(
+        ["rev-list", "--reverse", f"{upstream}..HEAD"],
+        cwd,
+    ).splitlines()
+
+
+def _branch_name_for_commit(commit: str) -> str:
+    return _run_git_command(["pilebranchname", commit])
+
+
+def _branch_exists(branch_name: str) -> bool:
+    return _git_check(
+        ["show-ref", "--verify", "--quiet", f"refs/heads/{branch_name}"]
+    )
+
+
+def _current_worktree_branch_names() -> set[str]:
+    try:
+        upstream = _upstream_ref()
+    except _GitError as error:
+        raise SystemExit(
+            f"error: current worktree does not have an upstream: {error}"
+        ) from error
+
+    return {
+        _branch_name_for_commit(commit)
+        for commit in _commits_ahead_of_upstream(upstream)
+    }
+
+
+def _validate_current_worktree() -> None:
+    cherry_pick_head = _run_git_command(
+        ["rev-parse", "--git-path", "CHERRY_PICK_HEAD"]
+    )
+    if os.path.exists(cherry_pick_head):
+        raise SystemExit("error: a cherry-pick is already in progress")
+
+    if _run_git_command(["status", "--porcelain"]):
+        raise SystemExit(
+            "error: current worktree has uncommitted changes; commit or stash them first"
+        )
+
+
+def _has_unmerged_paths() -> bool:
+    return bool(_run_git_command(["diff", "--name-only", "--diff-filter=U"]))
+
+
+def _abort_cherry_pick() -> None:
+    _git_run(["cherry-pick", "--abort"])
+
+
+def _cherry_pick(commit: str, commit_short: str, worktree_path: str) -> None:
+    try:
+        _git_check_call(["cherry-pick", commit])
+        return
+    except subprocess.CalledProcessError as error:
+        if not _has_unmerged_paths():
+            print(
+                f"error: failed to cherry-pick {commit_short} from {worktree_path}",
+                file=sys.stderr,
+            )
+            raise SystemExit(error.returncode) from error
+
+    print(
+        f"warning: cherry-pick {commit_short} conflicted; running git mergetool",
+        file=sys.stderr,
+    )
+
+    try:
+        _git_check_call(["mergetool"])
+    except subprocess.CalledProcessError as error:
+        _abort_cherry_pick()
+        print(
+            f"error: git mergetool failed while cherry-picking {commit_short}",
+            file=sys.stderr,
+        )
+        raise SystemExit(error.returncode) from error
+
+    try:
+        _git_check_call(["-c", "core.editor=true", "cherry-pick", "--continue"])
+    except subprocess.CalledProcessError as error:
+        _abort_cherry_pick()
+        print(
+            f"error: failed to continue cherry-pick {commit_short} after mergetool",
+            file=sys.stderr,
+        )
+        raise SystemExit(error.returncode) from error
+
+
+def _main() -> None:
+    _validate_current_worktree()
+
+    current_git_dir = _run_git_command(["rev-parse", "--absolute-git-dir"])
+    current_branch_names = _current_worktree_branch_names()
+
+    cherry_picked_count = 0
+    already_present_count = 0
+    without_branch_count = 0
+
+    for worktree_path in _worktree_paths():
+        try:
+            source_git_dir = _run_git_command(
+                ["rev-parse", "--absolute-git-dir"],
+                cwd=worktree_path,
+            )
+        except _GitError:
+            print(
+                f"warning: skipping unreadable worktree: {worktree_path}",
+                file=sys.stderr,
+            )
+            continue
+
+        if source_git_dir == current_git_dir:
+            continue
+
+        try:
+            upstream = _upstream_ref(worktree_path)
+        except _GitError:
+            print(
+                f"warning: skipping worktree without an upstream: {worktree_path}",
+                file=sys.stderr,
+            )
+            continue
+
+        for commit in _commits_ahead_of_upstream(upstream, worktree_path):
+            branch_name = _branch_name_for_commit(commit)
+            if not _branch_exists(branch_name):
+                without_branch_count += 1
+                continue
+
+            if branch_name in current_branch_names:
+                already_present_count += 1
+                continue
+
+            commit_short = _run_git_command(["rev-parse", "--short", commit])
+            subject = _run_git_command(
+                ["show", "--no-patch", "--no-show-signature", "--format=%s", commit]
+            )
+            print(
+                f"cherry-picking {commit_short} ({branch_name}): {subject}",
+                flush=True,
+            )
+
+            _cherry_pick(commit, commit_short, worktree_path)
+
+            current_branch_names.add(branch_name)
+            cherry_picked_count += 1
+
+    print(
+        f"cherry-picked {cherry_picked_count} commit(s); "
+        f"skipped {already_present_count} already-present commit(s); "
+        f"ignored {without_branch_count} commit(s) without submitted branches"
+    )
+
+
+if __name__ == "__main__":
+    _main()
