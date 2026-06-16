@@ -88,7 +88,9 @@ else
 fi
 
 _detach_branch() {
+  git -C "$worktree_dir" cherry-pick --abort || true
   git -C "$worktree_dir" switch --detach $quiet_arg
+  git branch -D "$branch_name"
 }
 
 trap _detach_branch EXIT
@@ -97,16 +99,12 @@ if ! git -C "$worktree_dir" cherry-pick "$commit" >/dev/null; then
   # TODO: if you ctrl-c out of the merge tool, it doesn't return false it exists the script only hitting the trap, so the cherry pick is not aborted
   if git -C "$worktree_dir" mergetool; then
     if ! git -C "$worktree_dir" -c core.editor=true cherry-pick --continue; then
-      git -C "$worktree_dir" cherry-pick --abort || true
       _detach_branch
-      git branch -D "$branch_name"
       echo "error: cherry picking failed, maybe there wasn't a commit to cherry pick?" >&2
       exit 1
     fi
   else
-    git -C "$worktree_dir" cherry-pick --abort
     _detach_branch
-    git branch -D "$branch_name"
     exit 1
   fi
 fi
@@ -177,7 +175,6 @@ if git -C "$worktree_dir" remote get-url mine >/dev/null 2>&1; then
   else
     echo "error: failed to create remote branch: $(cat "$error_file")" >&2
     _detach_branch
-    git branch -D "$branch_name"
     exit 1
   fi
 elif git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream origin "$branch_name" 2> "$error_file"; then
@@ -216,6 +213,5 @@ elif git -C "$worktree_dir" push --no-verify $quiet_arg --set-upstream origin "$
 else
   echo "error: failed to create remote branch: $(cat "$error_file")" >&2
   _detach_branch
-  git branch -D "$branch_name"
   exit 1
 fi
