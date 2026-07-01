@@ -8,11 +8,16 @@ fi
 
 rebase_args=()
 commit=""
+force=0
 for arg in "$@"
 do
   case "$arg" in
     -i)
       rebase_args+=("-i")
+      shift
+      ;;
+    --force)
+      force=1
       shift
       ;;
     *)
@@ -57,6 +62,10 @@ if ! git -C "$worktree_dir" rebase "$branch_with_remote" "${rebase_args[@]:---}"
     git -C "$worktree_dir" rebase --abort
     exit 1
   fi
+fi
+
+if [[ $force -eq 1 ]]; then
+  git -C "$worktree_dir" commit --amend --no-edit
 fi
 
 # TODO: this skips push hooks, not sure if good? maybe pushing in the main repo would be better
