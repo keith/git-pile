@@ -55,12 +55,60 @@ if [[ -n "${onto_ref:-}" && -n "${base:-}" ]]; then
   exit 1
 fi
 
+_ask() {
+  local answer
+
+  while true; do
+    if ! read -r -p "$1" -n 1 answer; then
+      echo >&2
+      return 1
+    fi
+    echo >&2
+
+    case "$answer" in
+      [Yy])
+        return 0
+        ;;
+      [Nn])
+        return 1
+        ;;
+    esac
+  done
+}
+
 commit="$(git rev-parse "$commit_arg")"
 upstream_ref="@{upstream}"
 branch_name="$(git pilebranchname "$commit")"
 
 if [[ -n "${onto_ref:-}" ]]; then
   base_branch_name="$(git pilebranchname "$onto_ref")"
+
+  # If the user submitted the PR from another machine, or deleted the branch
+  # locally, we have to recreate it
+  if ! git show-ref --verify $quiet_arg refs/heads/"$base_branch_name"; then
+    for remote in mine origin; do
+      # If the user submitted the PR from another machine, and hasn't pulled
+      # since, it might require fetching
+      git fetch $quiet_arg "$remote" "$base_branch_name" >/dev/null 2>&1 || true
+
+      if git show-ref --verify $quiet_arg "refs/remotes/$remote/$base_branch_name"; then
+        if _ask "warning: --onto ref '$onto_ref' resolves to missing local branch '$base_branch_name'. Create it tracking '$remote/$base_branch_name'? [y/N]: "; then
+          git branch --track "$base_branch_name" "$remote/$base_branch_name"
+          break
+        fi
+
+        echo "error: --onto ref '$onto_ref' resolves to branch '$base_branch_name', but that branch does not exist locally" >&2
+        echo "hint: create it with: git branch --track '$base_branch_name' '$remote/$base_branch_name'" >&2
+        exit 1
+      fi
+    done
+
+    if ! git show-ref --verify $quiet_arg refs/heads/"$base_branch_name"; then
+      echo "error: --onto ref '$onto_ref' resolves to branch '$base_branch_name', but that branch does not exist locally, maybe you haven't created a PR for that commit?" >&2
+      exit 1
+    fi
+  fi
+
   upstream_ref="$base_branch_name@{upstream}"
 elif [[ -n "${base:-}" ]]; then
   upstream_ref="$base@{upstream}"
