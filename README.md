@@ -172,6 +172,20 @@ Example:
 $ git rebasepr abc123 # the sha of the PR you want to rebase
 ```
 
+### git-pilecombine
+
+`git-pilecombine` cherry-picks submitted pile commits from other
+worktrees into the current worktree. It looks at every worktree, finds
+commits ahead of that worktree's upstream, keeps only commits with a
+local `git-pile` branch, and skips commits whose derived `git-pile`
+branch name already exists in the current worktree's pile.
+
+Example:
+
+```sh
+$ git pilecombine
+```
+
 ## Installation
 
 ### On macOS with [homebrew](https://brew.sh)
