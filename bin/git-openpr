@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ -n "${GIT_PILE_VERBOSE:-}" ]]; then
+  set -x
+fi
+
+if [[ $# -gt 1 ]]; then
+  echo "usage: $0 [sha]" >&2
+  exit 1
+fi
+
+branch_name="$(git pilebranchname "${1:-HEAD}")"
+exec gh pr view "$branch_name" --web

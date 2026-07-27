@@ -172,6 +172,17 @@ Example:
 $ git rebasepr abc123 # the sha of the PR you want to rebase
 ```
 
+### git-openpr
+
+`git-openpr` opens the submitted PR for a given sha in your browser.
+
+Example:
+
+```sh
+$ git openpr # open the PR for HEAD
+$ git openpr abc123 # or pass the sha of the PR you want to open
+```
+
 ## Installation
 
 ### On macOS with [homebrew](https://brew.sh)
