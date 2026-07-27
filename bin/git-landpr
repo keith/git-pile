@@ -44,6 +44,7 @@ def _get_pr_url(commit: str) -> str:
         ["gh", "pr", "list", "--head", branch_name, "--json", "url", "--limit", "1"],
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode != 0:
         raise SystemExit(

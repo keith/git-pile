@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from typing import List, Dict, Tuple
 import argparse
 import collections
 import subprocess
@@ -8,6 +7,7 @@ import sys
 
 RED = "\033[91m"
 RESET = "\033[0m"
+
 
 class _GitError(Exception):
     pass
@@ -23,7 +23,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _run_git_command(args: List[str]) -> str:
+def _run_git_command(args: list[str]) -> str:
     try:
         output: bytes = subprocess.check_output(["git"] + args)
         # TODO: got an exception here at some point
@@ -43,10 +43,8 @@ def _is_in_repo() -> bool:
         return False
 
 
-def _get_staged_files() -> List[str]:
-    statuses = _run_git_command(
-        ["diff", "--cached", "--name-status"]
-    ).splitlines()
+def _get_staged_files() -> list[str]:
+    statuses = _run_git_command(["diff", "--cached", "--name-status"]).splitlines()
     files = []
     for status in statuses:
         # Modified files are formatted as M<tab>filepath
@@ -56,17 +54,17 @@ def _get_staged_files() -> List[str]:
     return files
 
 
-def _get_modified_files() -> List[str]:
+def _get_modified_files() -> list[str]:
     return _run_git_command(["diff", "--name-only"]).splitlines()
 
 
-def _get_possible_shas() -> List[str]:
+def _get_possible_shas() -> list[str]:
     return _run_git_command(
         ["log", "--no-show-signature", "--pretty=%H", "@{upstream}..HEAD"]
     ).splitlines()
 
 
-def _get_changed_files() -> Tuple[List[str], bool]:
+def _get_changed_files() -> tuple[list[str], bool]:
     staged_files = _get_staged_files()
     if staged_files:
         return (staged_files, False)
@@ -78,16 +76,14 @@ def _get_changed_files() -> Tuple[List[str], bool]:
     return ([], False)
 
 
-def _files_for_sha(sha: str) -> List[str]:
+def _files_for_sha(sha: str) -> list[str]:
     return _run_git_command(
         ["show", "--no-show-signature", "--name-only", "--pretty=", sha]
     ).splitlines()
 
 
-def _shas_by_file(
-    shas: List[str], changed_files: List[str]
-) -> Dict[str, List[str]]:
-    shas_by_file: Dict[str, List[str]] = collections.defaultdict(list)
+def _shas_by_file(shas: list[str], changed_files: list[str]) -> dict[str, list[str]]:
+    shas_by_file: dict[str, list[str]] = collections.defaultdict(list)
     for sha in shas:
         for filepath in _files_for_sha(sha):
             if filepath in changed_files:
@@ -96,7 +92,7 @@ def _shas_by_file(
     return shas_by_file
 
 
-def _main(squash: bool, commit_args: List[str]) -> None:
+def _main(squash: bool, commit_args: list[str]) -> None:
     if not _is_in_repo():
         sys.exit("error: not in git repo")
 
@@ -109,26 +105,18 @@ def _main(squash: bool, commit_args: List[str]) -> None:
         sys.exit("error: no changed files")
 
     shas_by_file = _shas_by_file(possible_shas, changed_files)
-    matching_shas = set(
-        sum(
-            (
-                shas_by_file[filepath]
-                for filepath in changed_files
-                if filepath in shas_by_file
-            ),
-            [],
-        )
-    )
+    matching_shas = {
+        sha
+        for filepath in changed_files
+        if filepath in shas_by_file
+        for sha in shas_by_file[filepath]
+    }
 
     if not matching_shas:
-        sys.exit(
-            "error: no commits changed: {}".format(", ".join(changed_files))
-        )
+        sys.exit("error: no commits changed: {}".format(", ".join(changed_files)))
     elif len(matching_shas) > 1:
         option_lines = []
-        print(
-            "Which commit would you like to add your changes to? (ctrl-c to cancel)"
-        )
+        print("Which commit would you like to add your changes to? (ctrl-c to cancel)")
         # TODO: Put shas in committed date order?
         for sha in matching_shas:
             output = subprocess.check_output(
@@ -141,8 +129,10 @@ def _main(squash: bool, commit_args: List[str]) -> None:
                 ["fzy"], input="\n".join(sorted(option_lines)).encode()
             ).decode()
         except FileNotFoundError:
-            sys.exit(f"{RED}error: 'fzy' was not found. Please install 'fzy' and make it available in your $PATH.\n"
-                     f"Learn more at: https://github.com/keith/git-pile/blob/main/README.md#manually{RESET}")
+            sys.exit(
+                f"{RED}error: 'fzy' was not found. Please install 'fzy' and make it available in your $PATH.\n"
+                f"Learn more at: https://github.com/keith/git-pile/blob/main/README.md#manually{RESET}"
+            )
         except subprocess.CalledProcessError:
             sys.exit(1)
 
