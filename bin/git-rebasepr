@@ -52,16 +52,21 @@ trap _detach_branch EXIT
 
 branch_with_remote=$(git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}")
 if ! git -C "$worktree_dir" rebase "$branch_with_remote" "${rebase_args[@]:---}"; then
-  # TODO: if multiple commits conflict this only handles the first one, after the continue it fails again, we need another mergetool call, in a loop
-  if git -C "$worktree_dir" mergetool .; then
-    if ! GIT_EDITOR=true git -C "$worktree_dir" rebase --continue; then
+  while true; do
+    if ! git -C "$worktree_dir" mergetool .; then
       git -C "$worktree_dir" rebase --abort
       exit 1
     fi
-  else
-    git -C "$worktree_dir" rebase --abort
-    exit 1
-  fi
+
+    if GIT_EDITOR=true git -C "$worktree_dir" rebase --continue; then
+      break
+    fi
+
+    if git -C "$worktree_dir" diff --quiet --diff-filter=U; then
+      git -C "$worktree_dir" rebase --abort
+      exit 1
+    fi
+  done
 fi
 
 if [[ $force -eq 1 ]]; then
