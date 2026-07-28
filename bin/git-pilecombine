@@ -39,12 +39,15 @@ def _git_check(args: list[str], cwd: str | None = None) -> bool:
     if cwd is not None:
         command.extend(["-C", cwd])
     command.extend(args)
-    return subprocess.run(
-        command,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    ).returncode == 0
+    return (
+        subprocess.run(
+            command,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        ).returncode
+        == 0
+    )
 
 
 def _git_run(args: list[str], cwd: str | None = None) -> subprocess.CompletedProcess:
@@ -85,9 +88,7 @@ def _branch_name_for_commit(commit: str) -> str:
 
 
 def _branch_exists(branch_name: str) -> bool:
-    return _git_check(
-        ["show-ref", "--verify", "--quiet", f"refs/heads/{branch_name}"]
-    )
+    return _git_check(["show-ref", "--verify", "--quiet", f"refs/heads/{branch_name}"])
 
 
 def _current_worktree_branch_names() -> set[str]:
@@ -105,9 +106,7 @@ def _current_worktree_branch_names() -> set[str]:
 
 
 def _validate_current_worktree() -> None:
-    cherry_pick_head = _run_git_command(
-        ["rev-parse", "--git-path", "CHERRY_PICK_HEAD"]
-    )
+    cherry_pick_head = _run_git_command(["rev-parse", "--git-path", "CHERRY_PICK_HEAD"])
     if os.path.exists(cherry_pick_head):
         raise SystemExit("error: a cherry-pick is already in progress")
 
