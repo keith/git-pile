@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ -n "${GIT_PILE_VERBOSE:-}" ]]; then
+  set -x
+fi
+
+if [[ $# -gt 1 ]]; then
+  echo "usage: $0 [sha]" >&2
+  exit 1
+fi
+
+branch_name="$(git pilebranchname "${1:-HEAD}")"
+url="$(gh pr list --head "$branch_name" --json url --jq '.[0].url' --limit 1)"
+if [[ -z "$url" ]]; then
+  echo "error: no PR found for branch '$branch_name'" >&2
+  exit 1
+fi
+
+exec gh pr view "$url" --web
