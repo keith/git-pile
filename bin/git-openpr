@@ -7,12 +7,19 @@ if [[ -n "${GIT_PILE_VERBOSE:-}" ]]; then
 fi
 
 if [[ $# -gt 1 ]]; then
-  echo "usage: $0 [sha]" >&2
+  echo "usage: $0 [sha | --branch | -b]" >&2
   exit 1
 fi
 
-branch_name="$(git pilebranchname "${1:-HEAD}")"
-url="$(gh pr list --head "$branch_name" --json url --jq '.[0].url' --limit 1)"
+case "${1:-HEAD}" in
+  --branch|-b)
+    branch_name="$(git symbolic-ref --short HEAD)"
+    ;;
+  *)
+    branch_name="$(git pilebranchname "${1:-HEAD}")"
+    ;;
+esac
+url="$(gh pr list --head "$branch_name" --state all --json url --jq '.[0].url' --limit 1)"
 if [[ -z "$url" ]]; then
   echo "error: no PR found for branch '$branch_name'" >&2
   exit 1
