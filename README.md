@@ -174,13 +174,17 @@ $ git rebasepr abc123 # the sha of the PR you want to rebase
 
 ### git-openpr
 
-`git-openpr` opens the submitted PR for a given sha in your browser.
+`git-openpr` opens the submitted PR for a given sha in your browser. Use
+`--branch` or `-b` to look up the PR using the current branch name
+instead of using the commit message (useful if you fell back to checking
+out a branch).
 
 Example:
 
 ```sh
 $ git openpr # open the PR for HEAD
 $ git openpr abc123 # or pass the sha of the PR you want to open
+$ git openpr --branch # open the PR for the current branch (also -b)
 ```
 
 ## Installation
