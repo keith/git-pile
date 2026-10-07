@@ -8,7 +8,25 @@ fi
 
 export GIT_SEQUENCE_EDITOR=true
 
-readonly commit_arg=${1:-HEAD}
+commit_arg=""
+rebase=false
+for arg in "$@"
+do
+  case "$arg" in
+    --rebase)
+      rebase=true
+      ;;
+    *)
+      if [[ -n "$commit_arg" ]]; then
+        echo "usage: $0 [<commit>] [--rebase]" >&2
+        exit 1
+      fi
+      commit_arg="$arg"
+      ;;
+  esac
+done
+
+readonly commit_arg=${commit_arg:-HEAD}
 commit="$(git rev-parse "$commit_arg")"
 
 branch_name="$(git pilebranchname "$commit_arg")"
@@ -61,6 +79,9 @@ fi
 upstream_branch=$(git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}")
 merge_base=$(git -C "$worktree_dir" merge-base "$upstream_branch" HEAD)
 git -C "$worktree_dir" reset --hard "$merge_base"
+if [[ "$rebase" == true ]]; then
+  git -C "$worktree_dir" rebase "$upstream_branch"
+fi
 
 if ! git -C "$worktree_dir" cherry-pick "$commit" >/dev/null; then
   # TODO: if you ctrl-c out of the merge tool, it doesn't return false it exists the script only hitting the trap, so the cherry pick is not aborted
